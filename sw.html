@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Professional Stopwatch</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            background-size: 300% 300%;
+            animation: gradientFlow 20s ease infinite;
+            overflow: hidden;
+        }
+
+        @keyframes gradientFlow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .stopwatch {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 40px;
+            border-radius: 20px;
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stopwatch::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: pulse 10s ease infinite;
+            pointer-events: none;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.2); opacity: 0.2; }
+            100% { transform: scale(1); opacity: 0.5; }
+        }
+
+        .display {
+            font-size: 72px;
+            font-family: 'Orbitron', monospace;
+            color: #e0e0e0;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+            margin-bottom: 40px;
+            padding: 20px 30px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s ease;
+        }
+
+        .display.active {
+            color: #00ff9d;
+            text-shadow: 0 0 25px rgba(0, 255, 157, 0.8);
+            box-shadow: inset 0 0 20px rgba(0, 255, 157, 0.3);
+            transform: scale(1.02);
+        }
+
+        .milliseconds {
+            font-size: 36px;
+            opacity: 0.7;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 15px 35px;
+            font-size: 18px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            color: white;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: all 0.5s;
+        }
+
+        button:hover::before {
+            left: 100%;
+        }
+
+        button:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .start {
+            background: linear-gradient(45deg, #00c853, #00e676);
+        }
+
+        .stop {
+            background: linear-gradient(45deg, #d81b60, #f06292);
+        }
+
+        .reset {
+            background: linear-gradient(45deg, #0288d1, #03a9f4);
+        }
+
+        @media (max-width: 480px) {
+            .display {
+                font-size: 48px;
+            }
+            .milliseconds {
+                font-size: 24px;
+            }
+            button {
+                padding: 12px 25px;
+                font-size: 16px;
+            }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Orbitron&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="stopwatch">
+        <div class="display">00:00:00<span class="milliseconds">.000</span></div>
+        <div class="buttons">
+            <button class="start">Start</button>
+            <button class="stop">Stop</button>
+            <button class="reset">Reset</button>
+        </div>
+    </div>
+
+    <script>
+        const display = document.querySelector('.display');
+        const msDisplay = document.querySelector('.milliseconds');
+        const startBtn = document.querySelector('.start');
+        const stopBtn = document.querySelector('.stop');
+        const resetBtn = document.querySelector('.reset');
+
+        let startTime;
+        let intervalId;
+        let elapsedTime = 0;
+
+        function formatTime(ms) {
+            let hours = Math.floor(ms / 3600000);
+            let minutes = Math.floor((ms % 3600000) / 60000);
+            let seconds = Math.floor((ms % 60000) / 1000);
+            let milliseconds = Math.floor(ms % 1000);
+            
+            return {
+                main: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`,
+                ms: `.${milliseconds.toString().padStart(3, '0')}`
+            };
+        }
+
+        function updateDisplay() {
+            const time = formatTime(elapsedTime);
+            display.childNodes[0].textContent = time.main;
+            msDisplay.textContent = time.ms;
+        }
+
+        startBtn.addEventListener('click', () => {
+            if (!intervalId) {
+                startTime = Date.now() - elapsedTime;
+                intervalId = setInterval(() => {
+                    elapsedTime = Date.now() - startTime;
+                    updateDisplay();
+                }, 10); // Update every 10ms for smoother millisecond display
+                display.classList.add('active');
+            }
+        });
+
+        stopBtn.addEventListener('click', () => {
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+                display.classList.remove('active');
+            }
+        });
+
+        resetBtn.addEventListener('click', () => {
+            clearInterval(intervalId);
+            intervalId = null;
+            elapsedTime = 0;
+            updateDisplay();
+            display.classList.remove('active');
+        });
+
+        // Initial display
+        updateDisplay();
+    </script>
+</body>
+</html>
